@@ -230,18 +230,14 @@ function walkExpressionBinding(walker, node) {
   walkPost('expressionBinding')(walker, node);
 }
 
-// Expression = Identifier | SummandLiteral | Projection | Case | FnLiteral | Application
+// Expression = Identifier | Projection | Case | FnLiteral | Application
 function isExpression(node) {
-  return isIdentifier(node) || isSummandLiteral(node) || isProjection(node) ||
-    isCase(node) || isFnLiteral(node) || isApplication(node);
+  return isIdentifier(node) || isProjection(node) || isCase(node) ||
+  isFnLiteral(node) || isApplication(node);
 }
 function walkExpression(walker, node) {
   if (isIdentifier(node)) {
     walkIdentifier(walker, node);
-  }
-
-  if (isSummandLiteral(node)) {
-    walkSummandLiteral(walker, node);
   }
 
   if (isProjection(node)) {
@@ -261,19 +257,6 @@ function walkExpression(walker, node) {
   }
 
   throw new Error('not an expression');
-}
-
-// SummandLiteral = {tag: String, products: List<Expression>}
-function summandLiteral(tag, products) {
-  return {node: 'summandLiteral', tag, products};
-}
-function isSummandLiteral(node) {
-  return node.node === 'summandLiteral';
-}
-function walkSummandLiteral(walker, node) {
-  walkPre('summandLiteral')(walker, node);
-  node.products.forEach(product => walkExpression(walker, product));
-  walkPost('summandLiteral')(walker, node);
 }
 
 // Projection = {expression: Expression, index: Nat}
@@ -358,7 +341,6 @@ function isNode(node) {
   (node.node === 'summand') ||
   (node.node === 'fnType') ||
   (node.node === 'expressionBinding') ||
-  (node.node === 'summandLiteral') ||
   (node.node === 'projection') ||
   (node.node === 'case') ||
   (node.node === 'branch') ||
@@ -405,10 +387,6 @@ function walkNode(walker, node) {
 
   if (isExpressionBinding(node)) {
     return walkExpressionBinding(walker, node);
-  }
-
-  if (isSummandLiteral(node)) {
-    return walkSummandLiteral(walker, node);
   }
 
   if (isProjection(node)) {
@@ -481,10 +459,6 @@ function validateNode(node) {
     expressionBinding: {
       pre: node => throwOnFalse(isExpressionBinding(node) && (typeof node.isPublic === 'boolean') &&
         (typeof node.name === 'string'))
-    },
-    summandLiteral: {
-      pre: node => throwOnFalse(isSummandLiteral(node) && (typeof node.tag === 'string') &&
-        Array.isArray(node.products))
     },
     projection: {
       pre: node => throwOnFalse(isProjection(node) && (typeof node.index === 'number'))
@@ -567,9 +541,6 @@ exports.isExpressionBinding = isExpressionBinding;
 exports.walkExpressionBinding = walkExpressionBinding;
 exports.isExpression = isExpression;
 exports.walkExpression = walkExpression;
-exports.summandLiteral = summandLiteral;
-exports.isSummandLiteral = isSummandLiteral;
-exports.walkSummandLiteral = walkSummandLiteral;
 exports.projection = projection;
 exports.isProjection = isProjection;
 exports.walkProjection = walkProjection;
