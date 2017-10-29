@@ -501,6 +501,204 @@ function allImportedUEIs(node) {
   return ueis;
 }
 
+const indent = (amount, content) => ' '.repeat(amount).concat(content);
+
+function ppSimpleIdentifier(node) {
+  return node.name;
+}
+
+function ppQualifiedIdentifier(node, indentation) {
+  return `${prettyPrint(node.outer, indentation)}::${node.inner}`;
+}
+
+function ppImport(node, indentation) {
+  const uei = node.uei.prettyPrint ? node.uei.prettyPrint(indentation) : JSON.stringify(node.uei);
+
+  return `import[${uei}]`;
+}
+
+function ppModuleLiteral(node, indentation) {
+  let str = '{\n';
+
+  if (node.entries.length > 0) {
+    str += node.entries.map(
+      entry => `${indent(indentation + 2, prettyPrint(entry, indentation + 2))};\n`
+    ).join('\n');
+
+    str += indent(indentation, '');
+  }
+
+  str += '}\n';
+
+  return str;
+}
+
+function ppModuleBinding(node, indentation) {
+  return `${node.isPublic ? 'public ' : ''}module ${node.name} = ${prettyPrint(node.module, indentation)}`;
+}
+
+function ppTypeBinding(node, indentation) {
+  return `${node.isPublic ? 'public ' : ''}type ${node.name} = ${prettyPrint(node.type, indentation)}`;
+}
+
+function ppADT(node, indentation) {
+  let str = '{\n';
+
+  if (node.summands.length > 0) {
+    str += node.summands.map(
+      summand => `${indent(indentation + 2, ppSummand(summand, indentation + 2))},\n`
+    ).join('\n');
+
+    str += indent(indentation, '');
+  }
+
+  str += '}\n';
+
+  return str;
+}
+
+function ppSummand(node, indentation) {
+  let str = `${node.tag}`;
+
+  if (node.product.length > 0) {
+    str += '(';
+    str += node.products.map(product => prettyPrint(product, indentation)).join(', ');
+    str += ')';
+  }
+
+  return str;
+}
+
+function ppFnType(node, indentation) {
+  let str = '(';
+  str += node.args.map(arg => prettyPrint(arg, indentation)).join(', ');
+  str += ') -> ';
+  str += prettyPrint(node.out, indentation);
+  return str;
+}
+
+function ppExpressionBinding(node, indentation) {
+  return `${node.isPublic ? 'public ' : ''}type ${node.name} = ${prettyPrint(node.expression, indentation)}`;
+}
+
+function ppProjection(node, indentation) {
+  return `${prettyPrint(node.expression, indentation)}.${node.index}`;
+}
+
+function ppCase(node, indentation) {
+  let str = '{\n';
+
+  if (node.branches.length > 0) {
+    str += node.branches.map(
+      branch => `${indent(indentation + 2, ppBranch(branch, indentation + 2))},\n`
+    ).join('\n');
+
+    str += indent(indentation, '');
+  }
+
+  str += '}\n';
+
+  return str;
+}
+
+function ppBranch(node, indentation) {
+  let str = node.tag;
+
+  if (node.boundNames.length > 0) {
+    str += '(';
+    str += node.boundNames.map(boundName => prettyPrint(boundName, indentation)).join(', ');
+    str += ')';
+  }
+
+  return str;
+}
+
+function ppFnLiteral(node, indentation) {
+  let str = '(';
+  str += node.args.map(arg => prettyPrint(arg, indentation)).join(', ');
+  str += ') -> {\n';
+  str += indent(indentation + 2, prettyPrint(node.body, indentation + 2));
+  str += indent(indentation, '}\n');
+  return str;
+}
+
+function ppApplication(node, indentation) {
+  let str = prettyPrint(node.fn, indentation);
+  str += '(';
+  str += node.args.map(arg => prettyPrint(arg, indentation)).join(', ');
+  str += ')';
+  return str;
+}
+
+// Takes a node pretty prints it.
+function prettyPrint(node, indentation) {
+  if (!indentation) {
+    indentation = 0;
+  }
+
+  if (isSimpleIdentifier(node)) {
+    return ppSimpleIdentifier(node, indentation);
+  }
+
+  if (isQualifiedIdentifier(node)) {
+    return ppQualifiedIdentifier(node, indentation);
+  }
+
+  if (isImport(node)) {
+    return ppImport(node, indentation);
+  }
+
+  if (isModuleLiteral(node)) {
+    return ppModuleLiteral(node, indentation);
+  }
+
+  if (isModuleBinding(node)) {
+    return ppModuleBinding(node, indentation);
+  }
+
+  if (isTypeBinding(node)) {
+    return ppTypeBinding(node, indentation);
+  }
+
+  if (isADT(node)) {
+    return ppADT(node, indentation);
+  }
+
+  if (isSummand(node)) {
+    return ppSummand(node, indentation);
+  }
+
+  if (isFnType(node)) {
+    return ppFnType(node, indentation);
+  }
+
+  if (isExpressionBinding(node)) {
+    return ppExpressionBinding(node, indentation);
+  }
+
+  if (isProjection(node)) {
+    return ppProjection(node, indentation);
+  }
+
+  if (isCase(node)) {
+    return ppCase(node, indentation);
+  }
+
+  if (isBranch(node)) {
+    return ppBranch(node, indentation);
+  }
+
+  if (isFnLiteral(node)) {
+    return ppFnLiteral(node, indentation);
+  }
+
+  if (isApplication(node)) {
+    return ppApplication(node, indentation);
+  }
+
+  throw new Error('invalid node');
+}
+
 exports.isIdentifier = isIdentifier;
 exports.walkIdentifier = walkIdentifier;
 exports.simpleIdentifier = simpleIdentifier;
@@ -560,3 +758,4 @@ exports.isNode = isNode;
 exports.walkNode = walkNode;
 exports.validateNode = validateNode;
 exports.allImportedUEIs = allImportedUEIs;
+exports.prettyPrint = prettyPrint;
